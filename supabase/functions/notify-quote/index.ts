@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
     `;
 
     // Use Resend if available, otherwise just log
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY") || "re_c9CaDjBJ_7ffmJVUuUx93RiPXTkSTzWy3";
     if (resendApiKey) {
       const resendResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
