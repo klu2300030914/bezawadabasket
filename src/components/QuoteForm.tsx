@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import type { TranslationKey } from '@/lib/translations';
+import { BUSINESS } from '@/lib/data';
 
 type Props = {
   t: (key: TranslationKey) => string;
@@ -39,16 +39,32 @@ export default function QuoteForm({ t }: Props) {
 
     setStatus('loading');
     try {
-      const { error } = await supabase.from('quote_requests').insert({
-        name: form.name.trim(),
-        organisation: form.organisation.trim() || null,
-        phone: form.phone.trim(),
-        email: form.email.trim() || null,
-        items_needed: form.items_needed.trim(),
-        preferred_date: form.preferred_date || null,
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-quote`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          organisation: form.organisation.trim() || null,
+          phone: form.phone.trim(),
+          email: form.email.trim() || null,
+          items_needed: form.items_needed.trim(),
+          preferred_date: form.preferred_date || null,
+        }),
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Request failed (${response.status})`);
+      }
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error('Server did not confirm the request');
+      }
 
       setStatus('success');
       setForm(initialState);
@@ -187,6 +203,17 @@ export default function QuoteForm({ t }: Props) {
               )}
             </button>
           </form>
+
+          <div className="mt-5 text-center">
+            <a
+              href={BUSINESS.whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-slate-500 hover:text-green-600 transition-colors"
+            >
+              Prefer WhatsApp? Click here to message us directly.
+            </a>
+          </div>
         </div>
       </div>
     </section>
